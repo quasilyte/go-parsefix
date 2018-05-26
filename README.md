@@ -99,7 +99,7 @@ For ease of integration there are two modes:
 1. Accept (full) filename, parse file, try to fix errors that are found during parsing.
 2. Accept (full) filename + list of parsing errors, try to fix all provided errors. This is useful if you already have parsing errors and want to speedup things a little bit (avoids re-parsing). Filename is used to filter errors. Caller may provide errors for multiple files, but only those that match filename will be addressed.
 
-Fixed file contents are printed to `stdout` by default.
+Fixed file contents are printed to `stdout` by default.  
 Flag `-i` causes `parsefix` to overwrite `-f` contents.
 
 Exit code:
