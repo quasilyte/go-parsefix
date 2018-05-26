@@ -1,2 +1,105 @@
 # go-parsefix
+
 Fixes simple parse errors automatically. Works great in combination with goimports.
+
+## About
+
+Sometimes you miss a trailing comma.  
+The other time it's a missing `;` or `}`.
+
+Stop interrupting yourself with such nuisances!  
+Let the `parsefix` perform it's magic.
+
+You do `ctrl+S` in your favourite IDE/editor, it tries to do `gofmt` (or `goimports`), which fails due
+to parsing errors, then plugin invokes `parsefix`, which could fix all those issues so `gofmt`
+can be executed again successfully. In the end, you don't even notice that there were a minor parsing
+error at all. It's just re-formatted and cleaned up.
+
+**Note**: in bright future we could fix **more** errors, not less, as parsing errors
+could be improved in some cases to avoid too vague descriptions that are not
+precise enough to perform action with high confidence.
+
+## What can be fixed
+
+`parsefix` does not do anything too smart. It only follows safe suggestions from
+error messages that usually lead to fixed source code.
+
+Note that it fixes *parsing* errors, not semantic or type errors.
+Sometimes it performs not quite right actions, for example, it could insert a `,` where `:`
+would make more sense, but you will notice that in the *typecheck* phase.
+The best part is that *typecheck* could actually run over your previously unparsable code.
+Type checker usually gives far more precise and concise error messages.
+
+### Fix missing comma
+
+```go
+xs := []string{
+	"a"
+	"b"
+}
+// =>
+xs := []string{
+	"a",
+	"b",
+}
+
+xs := []int{1 2}
+// =>
+xs := []int{1, 2}
+
+foo(1 2)
+// =>
+foo(1, 2)
+```
+
+### Fix missing semicolon
+
+```go
+x++ y++
+// =>
+x++; y++
+
+if x := 1 x != y {
+}
+// =>
+if x := 1; x != y {
+}
+```
+
+### Fix missing brace
+
+```go
+// For declarations that expect closing '}' 
+// and are the last in the file (so, parser reports unexpected EOF).
+func f() int {
+	return 0
+// =>
+func f() int {
+	return 0
+}
+```
+
+## Problems
+
+Some parsing errors drive Go parser mad.  
+Single typo causes multiple parts of the source file to issue parsing errors.  
+This could lead to false-positives, unfortunately.
+
+It would also be great to fix things like `var x := y` to `var x = y`, but
+there is no way to do so currently, as messages for this kinds of errors are ambiguous and
+do not mention `:=` at all.
+
+Maybe `parsefix` will learn to avoid those in future.
+We need more user feedback and bug reports.
+
+## Integration
+
+For ease of integration there are two modes:
+
+1. Accept (full) filename, parse file, try to fix errors that are found during parsing.
+2. Accept (full) filename + list of parsing errors, try to fix all provided errors. This is useful if you already have parsing errors and want to speedup things a little bit (avoids re-parsing). Filename is used to filter errors. Caller may provide errors for multiple files, but only those that match filename will be addressed.
+
+To use the first mode, `-reparse` must be set to `true`. Otherwise it's the 2nd mode.
+
+Fixed file contents are printed to `stdout` by default.
+Flag `-i` causes `parsefix` to overwrite `-filename` contents.
