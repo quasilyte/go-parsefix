@@ -99,7 +99,19 @@ For ease of integration there are two modes:
 1. Accept (full) filename, parse file, try to fix errors that are found during parsing.
 2. Accept (full) filename + list of parsing errors, try to fix all provided errors. This is useful if you already have parsing errors and want to speedup things a little bit (avoids re-parsing). Filename is used to filter errors. Caller may provide errors for multiple files, but only those that match filename will be addressed.
 
-To use the first mode, `-reparse` must be set to `true`. Otherwise it's the 2nd mode.
-
 Fixed file contents are printed to `stdout` by default.
-Flag `-i` causes `parsefix` to overwrite `-filename` contents.
+Flag `-i` causes `parsefix` to overwrite `-f` contents.
+
+Exit code:
+* 0 if at least one issue was fixed.
+* 1 and no output if no issues were fixed. With `-i` no re-write is done.
+* 2 and no output if there were no parsing issues at all. With `-i` no re-write is done.
+
+Examples:
+```bash
+# Uses 1st mode. parsefix does parsing itself and prints fixed code to stdout.
+parsefix -f=foo/main.go
+
+# Uses 2nd mode. No parsing is done by parsefix.
+parsefix -f=foo/main.go 'foo/main.go:9:3: expected \'{\', found \'EOF\''
+```
