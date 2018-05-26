@@ -113,5 +113,5 @@ Examples:
 parsefix -f=foo/main.go
 
 # Uses 2nd mode. No parsing is done by parsefix.
-parsefix -f=foo/main.go 'foo/main.go:9:3: expected \'{\', found \'EOF\''
+parsefix -f=foo/main.go "foo/main.go:9:3: expected '{', found 'EOF'"
 ```
