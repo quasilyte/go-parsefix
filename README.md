@@ -50,6 +50,28 @@ xs := []int{1, 2}
 foo(1 2)
 // =>
 foo(1, 2)
+
+func f(a int b int32) {}
+// =>
+func f(a int, b int32) {}
+```
+
+### Fix missing colon
+
+```go
+switch v {
+case 1
+	return a
+case 2
+	return b
+}
+// =>
+switch v {
+case 1:
+	return a
+case 2:
+	return b
+}
 ```
 
 ### Fix missing semicolon
@@ -66,19 +88,36 @@ if x := 1; x != y {
 }
 ```
 
-### Fix missing brace
+### Fix misplaced tokens
 
 ```go
-// For declarations that expect closing '}' 
-// and are the last in the file (so, parser reports unexpected EOF).
-func f() int {
-	return 0
+func f() {
+	:=
+	g()
+}
 // =>
-func f() int {
-	return 0
+func f() {
+	g()
 }
 ```
 
+### Fix illegal characters
+
+```go
+func f() {
+	$ g()
+	🔥 g()
+	# g()
+	№ g()
+}
+// =>
+func f() {
+	g()
+	g()
+	g()
+	g()
+}
+```
 ## Problems
 
 Some parsing errors drive Go parser mad.  

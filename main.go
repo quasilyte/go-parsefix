@@ -66,8 +66,11 @@ func main() {
 		missingByteFixer(`missing ',' before newline in composite literal`, ','),
 		missingByteFixer(`missing ',' in composite literal`, ','),
 		missingByteFixer(`missing ',' in argument list`, ','),
-		missingByteFixer(`expected '}', found 'EOF'`, '}'),
+		missingByteFixer(`missing ',' in parameter list`, ','),
+		missingByteFixer(`expected ':', found newline`, ':'),
 		missingByteFixer(`expected ';', found `, ';'),
+		removeCaptureFixer(`illegal character U\+[0-9A-F]+ '(.)'`),
+		removeCaptureFixer(`expected statement, found '(.*)'`),
 	}
 
 	// Try to fix as much issues as possible.
@@ -176,6 +179,23 @@ func (v *byteVector) Locate(loc location) int {
 type fixer struct {
 	match  func(s string) bool
 	repair func(src *byteVector, loc location)
+}
+
+func removeCaptureFixer(errorPat string) fixer {
+	re := regexp.MustCompile(errorPat)
+	var m []string
+	return fixer{
+		match: func(s string) bool {
+			m = re.FindStringSubmatch(s)
+			return m != nil
+		},
+		repair: func(src *byteVector, loc location) {
+			pos := src.Locate(loc)
+			for i := 0; i < len(m[1]); i++ {
+				(*src)[pos+i] = ' '
+			}
+		},
+	}
 }
 
 func missingByteFixer(errorPat string, toInsert byte) fixer {
