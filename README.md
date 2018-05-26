@@ -1,6 +1,6 @@
 # go-parsefix
 
-Fixes simple parse errors automatically. Works great in combination with goimports.
+Fixes simple parse errors automatically. Works great in combination with [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
 
 ## About
 
