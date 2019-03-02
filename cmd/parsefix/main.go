@@ -20,6 +20,7 @@ import (
 type exitCode int
 
 // Exit codes are part of the parsefix public API.
+//go:generate stringer -type=exitCode
 const (
 	// fixedSomeExit is used when there were some parsing errors
 	// and at least one of them is fixed.
@@ -84,7 +85,7 @@ func runMain(argv *arguments) (exitCode, error) {
 		return errorExit, errors.Errorf("read file: %v", err)
 	}
 
-	src := byteVector(data)
+	src := newSrcFile(data)
 	issues := flag.Args()
 	if len(issues) == 0 {
 		issues = collectParseErrors(argv.filename, data)
@@ -98,14 +99,39 @@ func runMain(argv *arguments) (exitCode, error) {
 
 	// List of all defined fixers.
 	fixers := []fixer{
-		missingByteFixer(`missing ',' before newline in composite literal`, ','),
-		missingByteFixer(`missing ',' in composite literal`, ','),
-		missingByteFixer(`missing ',' in argument list`, ','),
-		missingByteFixer(`missing ',' in parameter list`, ','),
-		missingByteFixer(`expected ':', found newline`, ':'),
-		missingByteFixer(`expected ';', found `, ';'),
-		removeCaptureFixer(`illegal character U\+[0-9A-F]+ '(.)'`),
-		removeCaptureFixer(`expected statement, found '(.*)'`),
+		missingByteFixer(
+			`missing ',' before newline in composite literal`,
+			','),
+
+		missingByteFixer(
+			`missing ',' in composite literal`,
+			','),
+
+		missingByteFixer(
+			`missing ',' in argument list`,
+			','),
+
+		missingByteFixer(
+			`missing ',' in parameter list`,
+			','),
+
+		missingByteFixer(
+			`expected ':', found newline`,
+			':'),
+
+		missingByteFixer(
+			`expected ';', found `, ';'),
+
+		removeCaptureFixer(
+			`illegal character U\+[0-9A-F]+ '(.)'`),
+
+		removeCaptureFixer(
+			`expected statement, found '(.*)'`),
+
+		replacingFixer(
+			`expected boolean or range expression, found assignment`,
+			`:= `,
+			`:= range `),
 	}
 
 	// Try to fix as much issues as possible.
@@ -122,7 +148,7 @@ func runMain(argv *arguments) (exitCode, error) {
 		if loc.file != argv.filename {
 			continue
 		}
-		if tryFix(&src, loc, fixers, issue) {
+		if tryFix(src, loc, fixers, issue) {
 			fixedAnything = true
 		}
 	}
@@ -132,11 +158,11 @@ func runMain(argv *arguments) (exitCode, error) {
 	}
 
 	if argv.inplace {
-		if err := ioutil.WriteFile(argv.filename, []byte(src), 0644); err != nil {
+		if err := ioutil.WriteFile(argv.filename, src.Bytes(), 0644); err != nil {
 			return errorExit, errors.Errorf("write inplace: %v", err)
 		}
 	} else {
-		argv.w.Write([]byte(src))
+		argv.w.Write(src.Bytes())
 	}
 
 	return fixedSomeExit, nil
@@ -149,13 +175,17 @@ var errorPrefixRE = regexp.MustCompile(`(.*):(\d+):(\d+): `)
 func locationInfo(match []string) location {
 	// See `errorPrefixRE`.
 	return location{
-		file:   match[1],
-		line:   atoi(match[2]),
-		column: atoi(match[3]),
+		file: match[1],
+
+		// We substract 1 from both line/column to
+		// make them a proper indexes into the source line slices.
+		line:   atoi(match[2]) - 1,
+		column: atoi(match[3]) - 1,
 	}
 }
 
 // location is decoded source code position.
+// TODO(quasilyte): use `token.Position`?
 type location struct {
 	file   string
 	line   int
@@ -173,78 +203,57 @@ func atoi(s string) int {
 	return v
 }
 
-// byteVector is a convenience wrapper around []byte that makes
-// content updating operations easier.
-type byteVector []byte
-
-// InsertByteAt inserts b into v at specified position.
-func (v *byteVector) InsertByteAt(b byte, pos int) {
-	*v = append(*v, 0)
-	copy((*v)[pos+1:], (*v)[pos:])
-	(*v)[pos] = b
-}
-
-// Locate finds source offset for location.
-func (v *byteVector) Locate(loc location) int {
-	data := *v
-
-	p := 0
-	line := 1
-	column := 1
-	for p < len(data) {
-		switch data[p] {
-		case '\n':
-			line++
-			column = 1
-		default:
-			column++
-		}
-		p++
-		if line == loc.line && column == loc.column {
-			return p
-		}
-	}
-	return len(data) - 1
-}
-
 type fixer struct {
-	match  func(s string) bool
-	repair func(src *byteVector, loc location)
+	match  func(*fixerContext) bool
+	repair func(*fixerContext)
 }
 
 func removeCaptureFixer(errorPat string) fixer {
 	re := regexp.MustCompile(errorPat)
 	var m []string
 	return fixer{
-		match: func(s string) bool {
-			m = re.FindStringSubmatch(s)
+		match: func(ctx *fixerContext) bool {
+			m = re.FindStringSubmatch(ctx.issue)
 			return m != nil
 		},
-		repair: func(src *byteVector, loc location) {
-			pos := src.Locate(loc)
-			for i := 0; i < len(m[1]); i++ {
-				(*src)[pos+i] = ' '
-			}
+		repair: func(ctx *fixerContext) {
+			ctx.replace(m[1], "")
+		},
+	}
+}
+
+func replacingFixer(errorPat, from, to string) fixer {
+	return fixer{
+		match: func(ctx *fixerContext) bool {
+			return strings.Contains(ctx.issue, errorPat) &&
+				ctx.contains(from)
+		},
+		repair: func(ctx *fixerContext) {
+			ctx.replace(from, to)
 		},
 	}
 }
 
 func missingByteFixer(errorPat string, toInsert byte) fixer {
 	return fixer{
-		match: func(s string) bool {
-			return strings.Contains(s, errorPat)
+		match: func(ctx *fixerContext) bool {
+			return strings.Contains(ctx.issue, errorPat)
 		},
-		repair: func(src *byteVector, loc location) {
-			pos := src.Locate(loc)
-			src.InsertByteAt(toInsert, pos)
+		repair: func(ctx *fixerContext) {
+			ctx.insertByte(toInsert)
 		},
 	}
 }
 
-func tryFix(src *byteVector, loc location, fixers []fixer, issue string) bool {
+func tryFix(src *srcFile, loc location, fixers []fixer, issue string) bool {
+	ctx := &fixerContext{
+		issue: issue,
+		loc:   loc,
+		src:   src,
+	}
 	for _, fix := range fixers {
-		if fix.match(issue) {
-			fix.repair(src, loc)
+		if fix.match(ctx) {
+			fix.repair(ctx)
 			return true
 		}
 	}
