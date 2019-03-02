@@ -1,3 +1,4 @@
+// Package parsefix implements Go source file syntax errors fixing.
 package parsefix
 
 import (
@@ -5,8 +6,16 @@ import (
 	"strconv"
 )
 
-// Repair tries to fix parsing issues inside code.
-// Issues are filtered by using filename.
+// Repair tries to fix parsing issues inside the code.
+//
+// Issues have a format of Go parser error messages.
+// For example:
+//	"foo/main.go:6:10: missing ',' in argument list"
+//	"foo/main.go:9:3: expected '{', found 'EOF'"
+//	"foo/main_test.go:13: expected statement, found ':='"
+// Note that messages can have different file reference.
+// All issues those reference does not match specified
+// filename argument are going to be skipped.
 //
 // Returns nil if no issues were fixed.
 // Returns non-nil byte slice of repaired code otherwise.
