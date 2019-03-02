@@ -2,6 +2,19 @@
 
 Fixes simple parse errors automatically. Works great in combination with [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
 
+## Installation
+
+```go
+go get -v github.com/quasilyte/go-parsefix/cmd/parsefix
+```
+
+Notes:
+
+1. You need `go` command to be installed.
+2. Executable is saved at your `$(go env GOPATH)/bin` by default.
+
+Do `parsefix -help` to see usage and flags documentation.
+
 ## Motivation
 
 Sometimes you miss a trailing comma.<br>
