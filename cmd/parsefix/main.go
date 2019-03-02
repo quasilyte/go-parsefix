@@ -97,8 +97,24 @@ func runMain(argv *arguments) (exitCode, error) {
 
 	fixedAnything := false
 
+	// TODO(quasilyte): this fixer can be done better,
+	// but this implementation will do for now.
+	funcOpenBraceFixer := fixer{
+		match: func(ctx *fixerContext) bool {
+			const errorPat = `expected declaration, found '{'`
+			return strings.Contains(ctx.issue, errorPat) &&
+				ctx.prevLineContains("func ")
+		},
+		repair: func(ctx *fixerContext) {
+			ctx.prevLineReplace("\n", "{\n")
+			ctx.replace("{", "")
+		},
+	}
+
 	// List of all defined fixers.
 	fixers := []fixer{
+		funcOpenBraceFixer,
+
 		missingByteFixer(
 			`missing ',' before newline in composite literal`,
 			','),
@@ -177,9 +193,11 @@ func locationInfo(match []string) location {
 	return location{
 		file: match[1],
 
-		// We substract 1 from both line/column to
-		// make them a proper indexes into the source line slices.
-		line:   atoi(match[2]) - 1,
+		// Substract 1 from column, so we have a proper index
+		// into a line slice, but don't substract 1 from the
+		// line, since we have a sentinel line entry in
+		// the beginning.
+		line:   atoi(match[2]),
 		column: atoi(match[3]) - 1,
 	}
 }

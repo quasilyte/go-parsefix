@@ -10,8 +10,17 @@ type fixerContext struct {
 	src   *srcFile
 }
 
+func (ctx *fixerContext) prevLineContains(s string) bool {
+	return bytes.Contains(ctx.src.lines[ctx.loc.line-1], []byte(s))
+}
+
 func (ctx *fixerContext) contains(s string) bool {
 	return bytes.Contains(ctx.src.lines[ctx.loc.line], []byte(s))
+}
+
+func (ctx *fixerContext) prevLineReplace(from, to string) {
+	ctx.src.lines[ctx.loc.line-1] = bytes.Replace(
+		ctx.src.lines[ctx.loc.line-1], []byte(from), []byte(to), 1)
 }
 
 func (ctx *fixerContext) replace(from, to string) {
