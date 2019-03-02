@@ -2,13 +2,15 @@
 
 Fixes simple parse errors automatically. Works great in combination with [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
 
-## About
+## Motivation
 
-Sometimes you miss a trailing comma.  
-The other time it's a missing `;` or `}`.
+Sometimes you miss a trailing comma.<br>
+The other time it's a missing `;` or `}`.<br>
+If you're beginner, you'll probably put `{` on a wrong line several times,<br>
+breaking the `gofmt` due to the parsing errors.
 
 Stop interrupting yourself with such nuisances!  
-Let the `parsefix` perform it's magic.
+Let `parsefix` perform it's magic.
 
 You do `ctrl+S` in your favourite IDE/editor, it tries to do `gofmt` (or `goimports`), which fails due
 to parsing errors, then plugin invokes `parsefix`, which could fix all those issues so `gofmt`
@@ -29,6 +31,17 @@ Sometimes it performs not quite right actions, for example, it could insert a `,
 would make more sense, but you will notice that in the *typecheck* phase.
 The best part is that *typecheck* could actually run over your previously unparsable code.
 Type checker usually gives far more precise and concise error messages.
+
+### Fix misplaced opening brace
+
+```go
+func f()
+{
+}
+// =>
+func f() {
+}
+```
 
 ### Fix missing comma
 
