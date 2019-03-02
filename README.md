@@ -26,7 +26,7 @@ breaking the `gofmt` due to the parsing errors.
 Stop interrupting yourself with such nuisances!  
 Let `parsefix` perform it's magic.
 
-You do `ctrl+S` in your favourite IDE/editor, it tries to do `gofmt` (or `goimports`), which fails due
+You do `ctrl+s` in your favourite IDE/editor, it tries to do `gofmt` (or `goimports`), which fails due
 to parsing errors, then plugin invokes `parsefix`, which could fix all those issues so `gofmt`
 can be executed again successfully. In the end, you don't even notice that there were a minor parsing
 error at all. It's just re-formatted and cleaned up.
