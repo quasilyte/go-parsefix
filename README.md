@@ -134,7 +134,7 @@ func f() {
 ## Problems
 
 Some parsing errors drive Go parser mad.  
-Single typo causes multiple parts of the source file to issue parsing errors.  
+A single typo causes multiple parts of the source file to issue parsing errors.  
 This could lead to false-positives, unfortunately.
 
 It would also be great to fix things like `var x := y` to `var x = y`, but
