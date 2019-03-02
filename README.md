@@ -1,4 +1,5 @@
 # go-parsefix
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-parsefix)](https://goreportcard.com/report/github.com/quasilyte/go-parsefix)
 
 Fixes simple parse errors automatically. Works great in combination with [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
@@ -23,7 +24,7 @@ The other time it's a missing `;` or `}`.<br>
 If you're a beginner, you'll probably put `{` on a wrong line several times,<br>
 breaking the `gofmt` due to the parsing errors.
 
-Stop interrupting yourself with such nuisances!  
+Stop interrupting yourself with such nuisances!<br>
 Let `parsefix` perform it's magic.
 
 You do `ctrl+s` in your favourite IDE/editor, it tries to do `gofmt` (or `goimports`), which fails due
@@ -57,7 +58,7 @@ func f() {
 }
 ```
 
-### Fix missing range keyword ([#3](https://github.com/quasilyte/go-parsefix/issues/3))
+### Fix missing range keyword
 
 ```go
 for x := xs {
