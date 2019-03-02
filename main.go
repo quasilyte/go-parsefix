@@ -13,49 +13,84 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
+
+type exitCode int
 
 // Exit codes are part of the parsefix public API.
 const (
-	// exitFixedSome is used when there were some parsing errors
+	// fixedSomeExit is used when there were some parsing errors
 	// and at least one of them is fixed.
-	exitFixedSome = 0
+	// Input file is overwritten if -inplace is set to true.
+	fixedSomeExit exitCode = 0
 
-	// exitFixedNone is used when there were some parsing errors
-	// and none of them is fixed.
-	exitFixedNone = 1
+	// fixedNoneExir is used when there were some parsing errors
+	// and none of them are fixed.
+	// Input file is not affected even if -inplace is set to true.
+	fixedNoneExit exitCode = 1
 
 	// exitNothingToFix is used when there were no parsing errors.
-	exitNothingToFix = 2
+	// Input file is not affected even if -inplace is set to true.
+	nothingToFixExit exitCode = 2
+
+	// errorExit is used when parsefix failed to execute its duties.
+	// Input file is not affected even if -inplace is set to true.
+	errorExit exitCode = 3
 )
 
+type arguments struct {
+	filename string
+	inplace  bool
+	issues   []string
+	w        io.Writer
+}
+
 func main() {
+	log.SetFlags(0)
+
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, `usage: parsefix -f=path/file.go\n`)
 		fmt.Fprint(os.Stderr, `usage: parsefix -f=path/file.go "path/file.go:1:2: error text"...`)
 		flag.PrintDefaults()
 	}
-	filename := flag.String("f", "",
+
+	var argv arguments
+	flag.StringVar(&argv.filename, "f", "",
 		`full file name for file being fixed`)
-	inplace := flag.Bool("inplace", false,
+	flag.BoolVar(&argv.inplace, "inplace", false,
 		`write updated contents to -f instead of stdout`)
 	flag.Parse()
 
-	if *filename == "" {
-		log.Fatalf("provide non-empty -filename option")
+	if argv.filename == "" {
+		log.Printf("error: provide non-empty -f (filename) option")
+		os.Exit(int(errorExit))
 	}
 
-	data, err := ioutil.ReadFile(*filename)
+	argv.w = os.Stdout
+
+	code, err := runMain(&argv)
 	if err != nil {
-		log.Fatal(*filename)
+		log.Printf("error: %v", err)
+		os.Exit(int(code))
 	}
+	os.Exit(int(code))
+}
+
+func runMain(argv *arguments) (exitCode, error) {
+	data, err := ioutil.ReadFile(argv.filename)
+	if err != nil {
+		return errorExit, errors.Errorf("read file: %v", err)
+	}
+
 	src := byteVector(data)
 	issues := flag.Args()
 	if len(issues) == 0 {
-		issues = collectParseErrors(*filename, data)
+		issues = collectParseErrors(argv.filename, data)
 		// It there're still no issues, do an early exit with special exit code.
 		if len(issues) == 0 {
-			os.Exit(exitNothingToFix)
+			return nothingToFixExit, nil
 		}
 	}
 
@@ -74,6 +109,7 @@ func main() {
 	}
 
 	// Try to fix as much issues as possible.
+	//
 	// Some parsing errors may cause more than one error, but are fixed
 	// by a single change. This is why exiting "successfully" when resolved
 	// less than len(issues) errors makes sense.
@@ -83,7 +119,7 @@ func main() {
 			continue
 		}
 		loc := locationInfo(m)
-		if loc.file != *filename {
+		if loc.file != argv.filename {
 			continue
 		}
 		if tryFix(&src, loc, fixers, issue) {
@@ -92,23 +128,18 @@ func main() {
 	}
 
 	if !fixedAnything {
-		os.Exit(exitFixedNone)
+		return fixedNoneExit, nil
 	}
 
-	var dst io.Writer
-	if *inplace {
-		f, err := os.OpenFile("test.txt", os.O_WRONLY|os.O_TRUNC, 0666)
-		if err != nil {
-			panic(err)
+	if argv.inplace {
+		if err := ioutil.WriteFile(argv.filename, []byte(src), 0644); err != nil {
+			return errorExit, errors.Errorf("write inplace: %v", err)
 		}
-		dst = f
 	} else {
-		dst = os.Stdout
+		argv.w.Write([]byte(src))
 	}
-	if _, err := dst.Write([]byte(src)); err != nil {
-		panic(err)
-	}
-	os.Exit(exitFixedSome)
+
+	return fixedSomeExit, nil
 }
 
 // errorPrefixRE is an anchor that we expect to see at the beginning of every parse error.
@@ -116,7 +147,7 @@ func main() {
 var errorPrefixRE = regexp.MustCompile(`(.*):(\d+):(\d+): `)
 
 func locationInfo(match []string) location {
-	// See errorPrefix.
+	// See `errorPrefixRE`.
 	return location{
 		file:   match[1],
 		line:   atoi(match[2]),
