@@ -4,7 +4,7 @@ Fixes simple parse errors automatically. Works great in combination with [goimpo
 
 ## Installation
 
-```go
+```bash
 go get -v github.com/quasilyte/go-parsefix/cmd/parsefix
 ```
 
