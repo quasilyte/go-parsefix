@@ -45,7 +45,7 @@ would make more sense, but you will notice that in the *typecheck* phase.
 The best part is that *typecheck* could actually run over your previously unparsable code.
 Type checker usually gives far more precise and concise error messages.
 
-### Fix misplaced opening brace
+### Fix misplaced opening brace ([#4](https://github.com/quasilyte/go-parsefix/issues/4))
 
 ```go
 func f()
@@ -53,6 +53,16 @@ func f()
 }
 // =>
 func f() {
+}
+```
+
+### Fix missing range keyword ([#4](https://github.com/quasilyte/go-parsefix/issues/3))
+
+```go
+for x := xs {
+}
+=>
+for x := range xs {
 }
 ```
 
