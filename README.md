@@ -56,7 +56,7 @@ func f() {
 }
 ```
 
-### Fix missing range keyword ([#4](https://github.com/quasilyte/go-parsefix/issues/3))
+### Fix missing range keyword ([#3](https://github.com/quasilyte/go-parsefix/issues/3))
 
 ```go
 for x := xs {
