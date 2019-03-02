@@ -1,6 +1,8 @@
 # go-parsefix
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-parsefix)](https://goreportcard.com/report/github.com/quasilyte/go-parsefix)
+[![GoDoc](https://godoc.org/github.com/quasilyte/go-parsefix/parsefix?status.svg)](https://godoc.org/github.com/quasilyte/go-parsefix/parsefix)
+
 
 Fixes simple parse errors automatically. Works great in combination with [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
 
