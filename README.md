@@ -165,6 +165,6 @@ Examples:
 # Uses 1st mode. parsefix does parsing itself and prints fixed code to stdout.
 parsefix -f=foo/main.go
 
-# Uses 2nd mode. No parsing is done by parsefix.
+# Uses 2nd mode. No parsing is done by the parsefix.
 parsefix -f=foo/main.go "foo/main.go:9:3: expected '{', found 'EOF'"
 ```
