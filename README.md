@@ -158,6 +158,7 @@ Exit code:
 * 0 if at least one issue was fixed.
 * 1 and no output if no issues were fixed. With `-i` no re-write is done.
 * 2 and no output if there were no parsing issues at all. With `-i` no re-write is done.
+* 3 some error occured, message is printed to stderr.
 
 Examples:
 ```bash
