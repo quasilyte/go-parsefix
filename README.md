@@ -6,7 +6,7 @@ Fixes simple parse errors automatically. Works great in combination with [goimpo
 
 Sometimes you miss a trailing comma.<br>
 The other time it's a missing `;` or `}`.<br>
-If you're beginner, you'll probably put `{` on a wrong line several times,<br>
+If you're a beginner, you'll probably put `{` on a wrong line several times,<br>
 breaking the `gofmt` due to the parsing errors.
 
 Stop interrupting yourself with such nuisances!  
